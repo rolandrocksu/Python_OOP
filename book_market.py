@@ -17,68 +17,86 @@ class BookCollection:
         self.storage = {}
 
     def add(self, book: Book):
+        if not isinstance(book, Book):
+            raise TypeError("You can only add book object")
+
         if book.isbn in self.storage:
             self.storage[book.isbn]['count'] += 1
         else:
+            with open("bookMarket.db", "a") as file:
+                file.write(''.join([book.to_string(), "\n"]))
             self.storage[book.isbn] = {
                 'count': 1,
                 'book': book
             }
 
     def show(self):
-        for idx, isnb, record in enumerate(self.storage.items(), start=1):
-            print(idx, '.', record['book'].to_string(), '-', record(['count']))
+        for idx, (isbn, record) in enumerate(self.storage.items(), start=1):
+            print(idx, '.', record['book'].to_string(), '-', record['count'])
+
+    def remove(self, book_isbn: str):
+        del self.storage[book_isbn]
+
+    def show_books(self):
+        with open("bookMarket.db", "r") as file:
+            print(file.readlines())
 
 
+class Application:
+
+    def __init__(self):
+        self.collection = BookCollection()
+        self.__exit = True
+
+    COMMANDS: tuple = (
+            "add-book",
+            "borrow-books",
+            "show-book",
+            "remove-book",
+            "show-books",
+            "exit"
+    )
 
 
-def add_book():
+    def run(self):
 
-    global collection
+        while self.__exit:
+            cmd = input("Command: ").lower().strip()
 
+            if cmd not in Application.COMMANDS:
+                print("[ERROR] - you should enter a valid command")
+                continue
 
-    collection = BookCollection()
-
-    isbn = input("ISBN: ")
-    title = input("Title: ")
-    authors = input("Authors: ").strip().split(',')
-
-    collection.add(Book(isbn, title, authors))
+            getattr(self, cmd.replace("-", "_").lower())()
 
 
-def borrow_book():
-    pass
+    def add_book(self):
+
+        isbn = input("ISBN: ")
+        title = input("Title: ").title()
+        authors = input("Authors: ").strip().split(',')
+
+        self.collection.add(Book(isbn, title, authors))
 
 
-def remove_book():
-    pass
+    def borrow_book(self):
+        pass
 
 
-def show_book():
-    global collection
-
-    collection.show()
+    def remove_book(self):
+        self.collection.remove(input("Enter book ISBN: "))
 
 
-def show_books():
-    pass
+    def show_book(self):
+        self.collection.show()
 
+
+    def show_books(self):
+        self.collection.show_books()
+
+    def exit(self):
+        self.__exit = False
 
 
 if __name__ == "__main__":
-    commands = (
-        "add-book",
-        "borrow-books",
-        "show-book",
-        "remove-book"
-    )
-
-    while True:
-        cmd = input("Command: ").lower().strip()
-
-        if cmd not in commands:
-            print("[ERROR] - you should enter a valid command")
-            continue
-
-        globals()[cmd.replace("-", "_").lower()]()
-
+    Application().run()
